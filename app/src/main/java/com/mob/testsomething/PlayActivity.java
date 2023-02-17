@@ -29,8 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 
 
-//todo stop的时候，记录MD5，当前位置。
-// TODO: 2023/2/17 监听视频切换的时候
 public class PlayActivity extends Activity {
 	private static final String TAG = "MainActivity2";
 	private String url = "http://vfx.mtime.cn/Video/2019/03/09/mp4/190309153658147087.mp4";
