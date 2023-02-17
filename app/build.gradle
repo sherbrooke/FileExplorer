@@ -41,5 +41,5 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-hls:2.18.2'
     implementation 'com.google.android.exoplayer:exoplayer-dash:2.18.2'
 
-
+    implementation 'com.tencent:mmkv-static:1.2.15'
 }
