@@ -7,9 +7,13 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,14 +33,29 @@ import java.util.Comparator;
 import java.util.List;
 
 
+
+
+//长按2倍速播放功能
+//
+//
+//		播放页面头部显示播放的文件
+//
+//
+//		快进点击和滑动的区域范围
+//
+//
+//		耳机脱出，自动暂停
+
 public class PlayActivity extends Activity {
 	private static final String TAG = "MainActivity2";
 	private String url = "http://vfx.mtime.cn/Video/2019/03/09/mp4/190309153658147087.mp4";
 	private String parentPath = "";
+	private String name = "";
 	private int pos = 0; //当前播放的视频在父目录中处的位置
 	private StyledPlayerView playerView;
 	private ExoPlayer mPlayer;
 	private MMKV kv;
+	private FrameLayout overlayFrameLayout;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -57,9 +76,7 @@ public class PlayActivity extends Activity {
 			url = intent.getStringExtra("path");
 			parentPath = intent.getStringExtra("parentPath");
 			pos = intent.getIntExtra("index", 0);
-			if (TextUtils.isEmpty(parentPath)) {
-				//todo 获取url的上级目录
-			}
+			name = intent.getStringExtra("name");
 		}
 		kv = MMKV.defaultMMKV();
 		mPlayer = new ExoPlayer.Builder(this).build();
@@ -92,8 +109,33 @@ public class PlayActivity extends Activity {
 			}
 
 		});
+
+		overlayFrameLayout = playerView.getOverlayFrameLayout();
+		LayoutInflater layoutInflater = getLayoutInflater();
+		View view = layoutInflater.inflate(R.layout.back_top, null, false);
+		TextView viewById = view.findViewById(R.id.current_file_name);
+		viewById.setText(name);
+		view.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				finish();
+			}
+		});
+		FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)getResources().getDimension(R.dimen.layout_height));
+		overlayFrameLayout.addView(view, params);
+
 		playerView.setPlayer(mPlayer);
 		playerView.setControllerShowTimeoutMs(3000);
+		playerView.setControllerVisibilityListener(new StyledPlayerView.ControllerVisibilityListener() {
+			@Override
+			public void onVisibilityChanged(int visibility) {
+				if (visibility == View.VISIBLE) {
+					overlayFrameLayout.setVisibility(View.VISIBLE);
+				} else {
+					overlayFrameLayout.setVisibility(View.GONE);
+				}
+			}
+		});
 		playerView.setFullscreenButtonClickListener(new StyledPlayerView.FullscreenButtonClickListener() {
 			@Override
 			public void onFullscreenButtonClick(boolean isFullScreen) {

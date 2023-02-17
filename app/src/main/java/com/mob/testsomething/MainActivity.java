@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
 						intent.putExtra("path", rootPath + "/" + fileInfo.getName());
 						intent.putExtra("index", position);
 						intent.putExtra("parentPath", rootPath );
+						intent.putExtra("name", fileInfo.getName());
 						startActivity(intent);
 					}
 
