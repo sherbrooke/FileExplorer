@@ -1,13 +1,14 @@
 package com.mob.testsomething;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,13 +48,13 @@ public class MainActivity extends AppCompatActivity {
 					FileInfo fileInfo = fileInfoFromPath.get(position);
 					if (fileInfo.isDir()) {
 						rootPath = rootPath  + "/" + fileInfo.getName();
-						Log.e("ssss", rootPath);
 						fileInfoFromPath = getFileInfoFromPath(rootPath);
 						adapter.setFileInfos(fileInfoFromPath);
 						adapter.notifyDataSetChanged();
 					} else {
 						Intent intent = new Intent(MainActivity.this, PlayActivity.class);
 						intent.putExtra("path", rootPath + "/" + fileInfo.getName());
+						intent.putExtra("index", position);
 						intent.putExtra("parentPath", rootPath );
 						startActivity(intent);
 					}
@@ -65,7 +66,28 @@ public class MainActivity extends AppCompatActivity {
 				@Override
 				public void setOnItemLongClickLitener(View view, int position) {
 					FileInfo fileInfo = fileInfoFromPath.get(position);
-					deleteFileThings(rootPath + "/" + fileInfo.getName() );
+					AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+							.setTitle("删除文件" + fileInfo.getName())
+							.setPositiveButton("删除", new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									deleteFileThings(rootPath + "/" + fileInfo.getName() );
+									fileInfoFromPath.remove(position);
+									adapter.setFileInfos(fileInfoFromPath);
+									adapter.notifyDataSetChanged();
+								}
+
+							})
+							.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									dialog.dismiss();
+								}
+
+							})
+							.setCancelable(true)
+							.create();
+					dialog.show();
 				}
 			});
 			LinearLayoutManager manager = new LinearLayoutManager(this);
@@ -120,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
 		for (File f: list) {
 			info = new FileInfo();
 			info.setName(f.getName());
-			Log.e("ssss", f.getName());
 			if (f.getName().startsWith(".")) {
 				continue;
 			}

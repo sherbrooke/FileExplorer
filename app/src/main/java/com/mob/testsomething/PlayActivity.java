@@ -12,12 +12,14 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.StyledPlayerView;
+import com.tencent.mmkv.MMKV;
 
 import java.io.File;
 import java.text.Collator;
@@ -27,15 +29,16 @@ import java.util.Comparator;
 import java.util.List;
 
 
-// TODO: 2023/2/16 mkv，flv等格式是否都支持
-//todo 记录当前位置
 //todo stop的时候，记录MD5，当前位置。
+// TODO: 2023/2/17 监听视频切换的时候
 public class PlayActivity extends Activity {
 	private static final String TAG = "MainActivity2";
 	private String url = "http://vfx.mtime.cn/Video/2019/03/09/mp4/190309153658147087.mp4";
 	private String parentPath = "";
+	private int pos = 0; //当前播放的视频在父目录中处的位置
 	private StyledPlayerView playerView;
 	private ExoPlayer mPlayer;
+	private MMKV kv;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -55,13 +58,12 @@ public class PlayActivity extends Activity {
 		if (intent != null) {
 			url = intent.getStringExtra("path");
 			parentPath = intent.getStringExtra("parentPath");
+			pos = intent.getIntExtra("index", 0);
 			if (TextUtils.isEmpty(parentPath)) {
 				//todo 获取url的上级目录
 			}
-
-
-
 		}
+		kv = MMKV.defaultMMKV();
 		mPlayer = new ExoPlayer.Builder(this).build();
 		mPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
 		mPlayer.addListener(new Player.Listener() {
@@ -83,6 +85,14 @@ public class PlayActivity extends Activity {
 				Player.Listener.super.onPlayerError(error);
 				Log.e("ssss", "播放失败" + error);
 			}
+			@Override
+			public void onMediaItemTransition(@Nullable MediaItem mediaItem, @Player.MediaItemTransitionReason int reason) {
+				String path = mediaItem.localConfiguration.uri.getPath();
+				url = path;
+				long aLong = kv.getLong(url, 0L);
+				mPlayer.seekTo(aLong);
+			}
+
 		});
 		playerView.setPlayer(mPlayer);
 		playerView.setControllerShowTimeoutMs(3000);
@@ -99,17 +109,15 @@ public class PlayActivity extends Activity {
 			}
 		});
 		playerView.requestFocus();
-
 		List<String> fileInfoFromPath = getFileInfoFromPath(parentPath);
-		boolean needAdd = false;
+		List<MediaItem> items = new ArrayList<>();
 		for (int i=0;i<fileInfoFromPath.size();i++) {
-			if (fileInfoFromPath.get(i).equals(url) || needAdd) {
-				needAdd =true;
-				MediaItem mediaItem = MediaItem.fromUri(Uri.parse(fileInfoFromPath.get(i)));
-				mPlayer.addMediaItem(mediaItem);//准备媒体资源
-			}
+			MediaItem mediaItem = MediaItem.fromUri(Uri.parse(fileInfoFromPath.get(i)));
+			items.add(mediaItem);
+//			mPlayer.addMediaItem(mediaItem);//准备媒体资源
 		}
-		needAdd = false;
+		long along = kv.getLong(url, 0L);
+		mPlayer.setMediaItems(items, pos, along);
 //		MediaItem mediaItem = MediaItem.fromUri(Uri.parse(url));
 //		mPlayer.setMediaItem(mediaItem);//准备媒体资源
 		mPlayer.prepare();
@@ -152,17 +160,6 @@ public class PlayActivity extends Activity {
 		playerView = findViewById(R.id.exo_player);
 	}
 
-//	@Override
-//	public void onSaveInstanceState(Bundle outState) {
-//		super.onSaveInstanceState(outState);
-//		updateTrackSelectorParameters();
-//		updateStartPosition();
-////		outState.putBundle(KEY_TRACK_SELECTION_PARAMETERS, trackSelectionParameters.toBundle());
-////		outState.putBoolean(KEY_AUTO_PLAY, startAutoPlay);
-////		outState.putInt(KEY_ITEM_INDEX, startItemIndex);
-////		outState.putLong(KEY_POSITION, startPosition);
-////		saveServerSideAdsLoaderState(outState);
-//	}
 
 	@Override
 	public void onStart() {
@@ -188,7 +185,7 @@ public class PlayActivity extends Activity {
 				playerView.onResume();
 				playerView.requestFocus();
 			}
-			// TODO: 2023/2/17 根据md5,获取mmkv中的position值，将进度定位
+
 		}
 	}
 
@@ -213,10 +210,7 @@ public class PlayActivity extends Activity {
 			if (mPlayer != null) {
 				mPlayer.stop();
 			}
-			// TODO: 2023/2/17 currentUrl? 播放到下一个目录时
-			File file = new File(url);
-			String md5 = Data.getFileMD5(file);
-			// TODO: 2023/2/17 根据md5,以及当前的position，保存到mmkv中
+			kv.encode(url, mPlayer.getContentPosition());
 		}
 	}
 
