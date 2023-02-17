@@ -25,26 +25,17 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.tencent.mmkv.MMKV;
 
-import java.io.File;
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 
 
 
-//长按2倍速播放功能
+// todo 长按2倍速播放功能
 //
+//	todo	快进点击和滑动的区域范围
 //
-//		播放页面头部显示播放的文件
-//
-//
-//		快进点击和滑动的区域范围
-//
-//
-//		耳机脱出，自动暂停
+//	todo	耳机脱出，自动暂停
 
 public class PlayActivity extends Activity {
 	private static final String TAG = "MainActivity2";
@@ -149,7 +140,7 @@ public class PlayActivity extends Activity {
 			}
 		});
 		playerView.requestFocus();
-		List<String> fileInfoFromPath = getFileInfoFromPath(parentPath);
+		List<String> fileInfoFromPath = FileUtils.getStringsFromPath(parentPath);
 		List<MediaItem> items = new ArrayList<>();
 		for (int i=0;i<fileInfoFromPath.size();i++) {
 			MediaItem mediaItem = MediaItem.fromUri(Uri.parse(fileInfoFromPath.get(i)));
@@ -164,37 +155,6 @@ public class PlayActivity extends Activity {
 		mPlayer.play();//开始播放
 	}
 
-	private List<String> getFileInfoFromPath(String rootPath) {
-		List<String> fileInfos = new ArrayList<>();
-		FileInfo info = null;
-		File rootFile = new File(rootPath);
-		if (!rootFile.exists() || !rootFile.isDirectory()) {
-			return fileInfos;
-		}
-		File[] list = rootFile.listFiles();
-		if (list == null || list.length <= 0) {
-			return fileInfos;
-		}
-		for (File f: list) {
-			if (f.getName().startsWith(".")) {
-				continue;
-			}
-			if (!f.isDirectory()) {
-				fileInfos.add(f.getAbsolutePath());
-			}
-		}
-		Collections.sort(fileInfos, new Comparator<String>() {
-			@Override
-			public int compare(String o1, String o2) {
-				//排序规则：按照汉字拼音首字母排序
-				Comparator<Object> com = Collator.getInstance(java.util.Locale.CHINA);
-				//该排序为正序排序，如果倒序排序则将compare中的01和02互换位置
-				return com.compare(o1, o2);
-
-			}
-		});
-		return fileInfos;
-	}
 
 	private void initView() {
 		playerView = findViewById(R.id.exo_player);
