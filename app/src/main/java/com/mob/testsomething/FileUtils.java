@@ -94,17 +94,27 @@ public class FileUtils {
 	}
 
 	public static void deleteFileThings(String path) {
-		File file = new File(path);
-		if (file.exists()) {
-			if (file.isDirectory()) {
-				File[] temp = file.listFiles(); //获取该文件夹下的所有文件
-				for (File value : temp) {
-					deleteFileThings(value.getAbsolutePath());
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					File file = new File(path);
+					if (file.exists()) {
+						if (file.isDirectory()) {
+							File[] temp = file.listFiles(); //获取该文件夹下的所有文件
+							for (File value : temp) {
+								deleteFileThings(value.getAbsolutePath());
+							}
+						} else {
+							file.delete(); //删除子文件
+						}
+						file.delete(); //删除文件夹
+					}
+				} catch (Throwable t) {
+
 				}
-			} else {
-				file.delete(); //删除子文件
 			}
-			file.delete(); //删除文件夹
-		}
+		}).start();
+
 	}
 }

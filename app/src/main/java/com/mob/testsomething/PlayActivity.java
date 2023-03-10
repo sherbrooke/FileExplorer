@@ -9,10 +9,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,6 +23,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackException;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.tencent.mmkv.MMKV;
@@ -31,11 +34,14 @@ import java.util.List;
 
 
 
-// todo 长按2倍速播放功能
-//
 //	todo	快进点击和滑动的区域范围
 //
 //	todo	耳机脱出，自动暂停
+
+// TODO: 2023/2/20 跳转下一集之后，头部名称未变
+
+// TODO: 2023/2/21 双击暂停
+
 
 public class PlayActivity extends Activity {
 	private static final String TAG = "MainActivity2";
@@ -93,27 +99,19 @@ public class PlayActivity extends Activity {
 			}
 			@Override
 			public void onMediaItemTransition(@Nullable MediaItem mediaItem, @Player.MediaItemTransitionReason int reason) {
-				String path = mediaItem.localConfiguration.uri.getPath();
-				url = path;
+				//切换到上一集或者下一集
+
+				kv.encode(url, mPlayer.getContentPosition());
+				url = mediaItem.localConfiguration.uri.getPath();
 				long aLong = kv.getLong(url, 0L);
 				mPlayer.seekTo(aLong);
+				// TODO: 2023/2/20 修改头部名称
+//				addTopView()
 			}
 
 		});
 
-		overlayFrameLayout = playerView.getOverlayFrameLayout();
-		LayoutInflater layoutInflater = getLayoutInflater();
-		View view = layoutInflater.inflate(R.layout.back_top, null, false);
-		TextView viewById = view.findViewById(R.id.current_file_name);
-		viewById.setText(name);
-		view.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				finish();
-			}
-		});
-		FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)getResources().getDimension(R.dimen.layout_height));
-		overlayFrameLayout.addView(view, params);
+		addTopView(name);
 
 		playerView.setPlayer(mPlayer);
 		playerView.setControllerShowTimeoutMs(3000);
@@ -140,6 +138,32 @@ public class PlayActivity extends Activity {
 			}
 		});
 		playerView.requestFocus();
+		playerView.setOnLongClickListener(new View.OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View v) {
+				return false;
+			}
+		});
+		playerView.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				long start = 0;
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					start = System.currentTimeMillis();
+				} else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+					if(mPlayer != null && System.currentTimeMillis() - start > 800) {
+						PlaybackParameters playbackParameters = new PlaybackParameters(2.0f, 1.0F);
+						mPlayer.setPlaybackParameters(playbackParameters);
+					}
+				} else if (event.getAction() == MotionEvent.ACTION_UP) {
+					if(mPlayer != null) {
+						PlaybackParameters playbackParameters = new PlaybackParameters(1.0f, 1.0F);
+						mPlayer.setPlaybackParameters(playbackParameters);
+					}
+				}
+				return false;
+			}
+		});
 		List<String> fileInfoFromPath = FileUtils.getStringsFromPath(parentPath);
 		List<MediaItem> items = new ArrayList<>();
 		for (int i=0;i<fileInfoFromPath.size();i++) {
@@ -153,6 +177,23 @@ public class PlayActivity extends Activity {
 //		mPlayer.setMediaItem(mediaItem);//准备媒体资源
 		mPlayer.prepare();
 		mPlayer.play();//开始播放
+	}
+
+	private void addTopView(String name) {
+		overlayFrameLayout = playerView.getOverlayFrameLayout();
+		LayoutInflater layoutInflater = getLayoutInflater();
+		View view = layoutInflater.inflate(R.layout.back_top, null, false);
+		TextView viewById = view.findViewById(R.id.current_file_name);
+		ImageView backToReturn = view.findViewById(R.id.back_to_return);
+		viewById.setText(name);
+		backToReturn.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				finish();
+			}
+		});
+		FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)getResources().getDimension(R.dimen.layout_height));
+		overlayFrameLayout.addView(view, params);
 	}
 
 
