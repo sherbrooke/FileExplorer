@@ -18,6 +18,9 @@ import java.util.List;
 
 
 //todo appbar修改 左边返回图标， 然后是目录名 右边待定
+// TODO: 2023/3/10 参考 ROOT Explorer。
+// 多tab，申请root权限
+
 public class MainActivity extends AppCompatActivity {
 
 	private RecyclerView fileList;
